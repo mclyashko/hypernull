@@ -330,6 +330,7 @@ public class StarterBot implements Bot {
     @Override
     public void onMatchOver(MatchOver matchOver) {
         resetMap();
+        System.out.println(matchOver);
     }
 
     public static void main(String[] args) throws IOException {
