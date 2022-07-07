@@ -97,6 +97,7 @@ public class StarterBot implements Bot {
         register.setMode(getMode());
         register.setBotName(properties.get("bot.name"));
         register.setBotSecret(properties.get("bot.secret"));
+        System.out.println("HELLO");
         return register;
     }
 
@@ -229,6 +230,7 @@ public class StarterBot implements Bot {
 
     @Override
     public Move onUpdate(Update update) {
+        System.out.println("UPDATE");
         // умные вещи
         Offset moveOffset = new Offset(0, 0);
 
@@ -329,8 +331,8 @@ public class StarterBot implements Bot {
 
     @Override
     public void onMatchOver(MatchOver matchOver) {
+        System.out.println("OVER");
         resetMap();
-        System.out.println(matchOver);
     }
 
     public static void main(String[] args) throws IOException {

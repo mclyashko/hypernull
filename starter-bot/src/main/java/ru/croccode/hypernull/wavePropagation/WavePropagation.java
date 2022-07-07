@@ -244,13 +244,6 @@ public class WavePropagation {
             int offsetY = startI - cPairI;
             int offsetX = cPairJ - startJ;
 
-            for (Pair<Integer, Integer> integerIntegerPair : path) {
-                System.out.print(integerIntegerPair);
-                System.out.print(" ");
-            }
-            System.out.println();
-            System.out.println("-------------------------------------------------");
-
             return new Offset(offsetX, offsetY);
         }
 
