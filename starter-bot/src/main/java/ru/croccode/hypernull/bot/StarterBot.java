@@ -44,13 +44,6 @@ public class StarterBot implements Bot {
         return -Integer.signum(a - aTo);
     }
 
-    private int getSquaredDistance(Point me, Point other) {
-        var x = me.x() - other.x();
-        var y = me.y() - other.y();
-
-        return x * x + y * y;
-    }
-
     private boolean isSecondNearer(Point me, Point first, Point second) { // true if second < first
         return getSquaredDistance(me, second) < getSquaredDistance(me, first);
     }
@@ -121,32 +114,6 @@ public class StarterBot implements Bot {
         initMap(viewRadius, mapWidth, mapHeight);
     }
 
-//    private Pair<Boolean, Offset> ifAttackAndDefeat(Map<Integer, Point> absoluteBots, Map<Integer, Integer> botCoins,
-//                                                    Point myAbsolutePoint) {
-//        int myCoins = botCoins.get(id);
-//
-//        boolean ansB = false;
-//        Point ansP = null;
-//
-//        for (var idI :
-//                absoluteBots.keySet()) {
-//            if (id != idI && botCoins.get(idI) >= myCoins) {
-//                if (ansP == null || isSecondNearer(myAbsolutePoint, ansP, absoluteBots.get(idI))) {
-//                    ansB = true;
-//                    ansP = absoluteBots.get(idI);
-//
-//                }
-//            }
-//        }
-//
-//        if (ansB) {
-//            return new Pair<Boolean, Offset>(true, getOptimalGoAwayOffset(myAbsolutePoint, ansP));
-//        } else {
-//            return new Pair<Boolean, Offset>(false, new Offset(0, 0));
-//        }
-//
-//    }
-
     private Pair<Boolean, Offset> handleEnemy(Map<Integer, Point> absoluteBots, Map<Integer, Integer> botCoins,
                                               Point myAbsolutePoint, boolean goWar) { // goWar true -> fight; false -> goAway
         int myCoins = botCoins.get(id);
@@ -174,48 +141,15 @@ public class StarterBot implements Bot {
 
     }
 
-  /*  private Pair<Boolean, Offset> ifAttackAndWin(Map<Integer, Point> bots, Map<Integer, Integer> botCoins,
-                                                 int myX, int myY) {
-        int myCoins = botCoins.get(id);
-
-        boolean ansB = false;
-        Point ansP = null;
-
-        for (var idI :
-                bots.keySet()) {
-            if (id != idI && botCoins.get(idI) < myCoins) {
-                if (ansP == null || isSecondNearer(myX, myY, ansP, bots.get(idI))) {
-                    ansB = true;
-                    ansP = bots.get(idI);
-                }
-            }
-        }
-
-        if (ansB) {
-            return new Pair<Boolean, Offset>(true, goToTargetStupidOffset(myX, myY, ansP.x(), ansP.y()));
-        } else {
-            return new Pair<Boolean, Offset>(false, null);
-        }
-    }*/
-
-    private Pair<Boolean, Offset> ifMoney(Set<Point> absoluteCoins, Point myAbsolutePoint) {
+    private Pair<Boolean, Stack<Offset>> ifMoney(Set<Point> absoluteCoins, Point myAbsolutePoint) {
         // волновой алгоритм
         // возвращает true, если можем куда-то добраться
         // offset - первый шаг
 
-        int[][] myMapCopy = new int[myMap.length][myMap[0].length];
-
-        for (int i = 0; i < myMapCopy.length; i++) {
-            for (int j = 0; j < myMapCopy[0].length; j++) {
-                int temp = 0;
-                if (myMap[i][j] == '#') temp = 999;
-
-                myMapCopy[i][j] = temp;
-            }
-        }
+        int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
 
         boolean ansB = false;
-        Offset ansO = new Offset(0, 0);
+        Stack<Offset> ansS = new Stack<>();
 
         int minLength = 999;
 
@@ -227,24 +161,71 @@ public class StarterBot implements Bot {
 
                 WavePropagation wavePropagation = new WavePropagation(myRelatedPoint, toRelatedPoint, myMapCopy);
 
-                if (wavePropagation.pathFound && wavePropagation.lengthPath < minLength) {//valueWavePropagation.getKey() < minLength) {
+                if (wavePropagation.pathFound && wavePropagation.lengthPath < minLength) {
                     ansB = true;
                     minLength = wavePropagation.lengthPath;
-                    ansO = wavePropagation.getFirstStep();
+                    ansS = wavePropagation.getAllSteps();
                 }
             }
         }
 
         if (ansB) {
-            return new Pair<>(true, ansO);
+            return new Pair<>(true, ansS);
         } else {
-            return new Pair<>(false, ansO); // ans0 -> Offset(0,0)
+            return new Pair<>(false, ansS); // ans0 -> new Stack<>();
         }
 
     }
 
+    private boolean ifNothing(Map<Integer, Point> bots, Set<Point> coins) {
+        return bots.size() <= 1 && coins == null;
+    }
+
     private Point lastAbsolutePoint = new Point(0, 0);
     private int amountOfSleepingSteps = 0;
+
+    private int amountOfStepsInTact = 0;
+
+    private Stack<Offset> stuckList = new Stack<>();
+    private Stack<Offset> sbrStack = new Stack<>();
+
+    private int[][] createMyMapIntCopyWithoutCoins() {
+        int[][] myMapCopy = new int[myMap.length][myMap[0].length];
+
+        for (int i = 0; i < myMapCopy.length; i++) {
+            for (int j = 0; j < myMapCopy[0].length; j++) {
+                int temp = 0;
+                if (myMap[i][j] == '#') temp = 999;
+
+                myMapCopy[i][j] = temp;
+            }
+        }
+
+        return myMapCopy;
+    }
+
+    private Stack<Offset> createInsaneAntiDancingOffset(Point myAbsolutePoint) {
+        int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
+
+        List<Stack<Offset>> ways = new ArrayList<>();
+
+        for(int i = 0; i < myMapCopy.length; i++) {
+            for (int j = 0; j < myMapCopy[i].length; j++) {
+                if (myMapCopy[i][j] != 999) {
+                    Point toRelatedPoint = new Point(j, i);
+                    Point myRelatedPoint = getRelatedPoint(myAbsolutePoint, myAbsolutePoint);
+
+                    WavePropagation wavePropagation = new WavePropagation(myRelatedPoint, toRelatedPoint, myMapCopy);
+
+                    if (wavePropagation.pathFound) {
+                        ways.add(wavePropagation.getAllSteps());
+                    }
+                }
+            }
+        }
+
+        return (!ways.isEmpty()) ? ways.stream().findAny().get() : new Stack<>();
+    }
 
     @Override
     public Move onUpdate(Update update) {
@@ -266,10 +247,7 @@ public class StarterBot implements Bot {
         boolean attackAndWin;
         boolean stuck = amountOfSleepingSteps >= 3;
         boolean goGoZeppeli;
-        boolean nothingElseMatters = false;
-
-        // TODO:
-        // обновление логических переменных
+        boolean nothingElseMatters;
 
         var valueAttackAndDefeat = handleEnemy(bots, botCoins, myAbsolutePoint, false);
         attackAndDefeat = valueAttackAndDefeat.getKey();
@@ -279,26 +257,58 @@ public class StarterBot implements Bot {
 
         var steelBallRun = ifMoney(coins, myAbsolutePoint);
         goGoZeppeli = steelBallRun.getKey();
+        if (sbrStack.isEmpty()) sbrStack = steelBallRun.getValue();
 
-        // var valueNothingButWalls;
-        // nothingElseMatters = valueNothingButWalls.getKey();
+        nothingElseMatters = ifNothing(bots, coins);
 
         // TODO:
         // логика
+        if (stuck) {
+            if (stuckList.isEmpty()) {
+                stuckList = createInsaneAntiDancingOffset(myAbsolutePoint);
+            }
 
-        if (attackAndDefeat) {
+            if (!stuckList.isEmpty()) {
+                moveOffset = stuckList.pop();
+            }
+            else {
+                moveOffset = new Offset(0,0);
+            }
+
+            if (rnd.nextInt(1000) > 888) {
+                stuckList.clear();
+            }
+        }
+        if (getMode() == MatchMode.DEATHMATCH && attackAndDefeat) {
             moveOffset = valueAttackAndDefeat.getValue();
-        } else if (attackAndWin) {
+        } else if (getMode() == MatchMode.DEATHMATCH && attackAndWin) {
             moveOffset = valueAttackAndWin.getValue();
-        } else if (false/*stuck*/) {
+        } else if (!sbrStack.isEmpty()){// || goGoZeppeli) {
+            moveOffset = sbrStack.pop();
+            if (rnd.nextInt(1000) > 888) {
+                sbrStack.clear();
+            }
+        } else {//if (amountOfStepsInTact >= 7 || nothingElseMatters || !stuckList.isEmpty()){//stuck || nothingElseMatters) {
             // TODO:
-            // уйти максимально далеко
+            // дрейф
 
-        } else if (goGoZeppeli) {
-            moveOffset = steelBallRun.getValue();
-        } else if (nothingElseMatters) {
-            // TODO:
-            // обход
+            amountOfStepsInTact = 0;
+
+            if (stuckList.isEmpty()) {
+                stuckList = createInsaneAntiDancingOffset(myAbsolutePoint);
+            }
+
+            if (!stuckList.isEmpty()) {
+                moveOffset = stuckList.pop();
+            }
+            else {
+                moveOffset = new Offset(0,0);
+            }
+
+            if (rnd.nextInt(1000) > 888) {
+                stuckList.clear();
+            }
+
         }
 
         if (lastAbsolutePoint.x() == myAbsolutePoint.x() &&
@@ -310,37 +320,11 @@ public class StarterBot implements Bot {
             lastAbsolutePoint = new Point(myAbsolutePoint.x(), myAbsolutePoint.y());
         }
 
+        amountOfStepsInTact += 1;
+
         Move move = new Move();
         move.setOffset(moveOffset);
         return move;
-
-//		if (iAmStuck) {
-//			// moveOffset = stuckOffset();
-//		}
-//		else {
-//			if (!Objects.equals(coins, null) && !coins.isEmpty()) {
-//				Optional<Point> nearestCoin = coins.stream().min(Comparator.comparingInt(
-//						p -> (
-//								(p.x() - myPointX) * (p.x() - myPointX) +
-//										(p.y() - myPointY) * (p.y() - myPointY)
-//						)
-//				));
-//
-//				Point trueNearestCoin = nearestCoin.get();
-//				moveOffset = nearestCoinOffset(myPointX, myPointY, trueNearestCoin.x(), trueNearestCoin.y());
-//			}
-//			else {
-//				moveOffset = new Offset(
-//						rnd.nextInt(3) - 1,
-//						rnd.nextInt(3) - 1
-//				);
-//			}
-//		}
-//
-//		moveCounter++;
-//		Move move = new Move();
-//		move.setOffset(moveOffset);
-//		return move;
     }
 
     @Override

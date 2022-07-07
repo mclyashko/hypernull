@@ -25,10 +25,14 @@ public class MapGraph {
         map = null;
     }
 
-    private static void clearMap() {
+    private static void clearMap(char[][] map) {
         for (char[] ints : map) {
             Arrays.fill(ints, '0');
         }
+    }
+
+    private static void clearMap() {
+        clearMap(map);
     }
 
     public static Point getRelatedPoint(int myAbsoluteX, int myAbsoluteY, int targetAbsoluteX, int targetAbsoluteY) {
@@ -77,14 +81,62 @@ public class MapGraph {
     }
 
     public static boolean isBlocked(Point relatedPoint) {  // надо протестировать
-        //return map[map.length - y - 1][x] == '#';
         return map[relatedPoint.y()][relatedPoint.x()] == '#';
+    }
+
+    public static int getSquaredDistance(int meX, int meY, int otherX, int otherY) {
+        var x = meX - otherX;
+        var y = meY - otherY;
+
+        return x * x + y * y;
+    }
+
+    public static int getSquaredDistance(Point me, Point other) {
+        return getSquaredDistance(me.x(), me.y(), other.x(), other.y());
+    }
+
+    private static boolean inScope(int meX, int meY, int otherX, int otherY) {
+        return getSquaredDistance(meX, meY, otherX, otherY) <= radius * radius;
+    }
+
+    private static boolean inScope(Point me, Point other) {
+        return inScope(me.x(), me.y(), other.y(), other.y());
+    }
+
+    private static void scopeMap(char[][] map) {
+        // r = 1
+        // 0 0 0 0 0
+        // 0 0 0 0 0
+        // 0 0 0 0 0
+        // 0 0 0 0 0
+        // 0 0 0 0 0
+        // -> to
+        // # # # # #
+        // # # 0 # #
+        // # 0 0 0 #
+        // # # 0 # #
+        // # # # # #
+
+        int centerX = map.length / 2;
+        int centerY = map[0].length / 2;
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[i].length; j++) {
+                if (!inScope(j, i, centerX, centerY)) {
+                    map[i][j] = '#';
+                }
+            }
+        }
+    }
+
+    private static void scopeMap() {
+        scopeMap(map);
     }
 
     public static void updateMap(Set<Point> absoluteBlocks, Set<Point> absoluteCoins, Map<Integer, Point> absoluteBots,
                                  Point myAbsolutePoint) {
         clearMap();
 
+        scopeMap();
         if (absoluteBlocks != null) addSomething(absoluteBlocks, myAbsolutePoint, '#');
         if (absoluteBots != null) addSomething(new HashSet<>(absoluteBots.values()), myAbsolutePoint, '#');
         if (absoluteCoins != null) addSomething(absoluteCoins, myAbsolutePoint, '$');

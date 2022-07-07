@@ -6,6 +6,7 @@ import ru.croccode.hypernull.geometry.Point;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class WavePropagation {
     private final int[][] map;
@@ -81,21 +82,19 @@ public class WavePropagation {
                             map[i][j - 1] = _step + 1;
                         }
 
-                        // TODO:
                         // диагонали
-//                        // диагонали
-//                        if (i != h - 1 && j != w - 1 && map[i + 1][j + 1] != 999) {   // down-right
-//                            map[i + 1][j + 1] = _step + 1;
-//                        }
-//                        if (i != h - 1 && j != 0 && map[i + 1][j - 1] != 999) {       // down-left
-//                            map[i + 1][j - 1] = _step + 1;
-//                        }
-//                        if (i != 0 && j != w - 1 && map[i - 1][j + 1] != 999) {       // up-right
-//                            map[i - 1][j + 1] = _step + 1;
-//                        }
-//                        if (i != 0 && j != 0 && map[i - 1][j - 1] != 999) {           // up-left
-//                            map[i - 1][j - 1] = _step + 1;
-//                        }
+                        if (i != h - 1 && j != w - 1 && map[i + 1][j + 1] == 0) {   // down-right
+                            map[i + 1][j + 1] = _step + 1;
+                        }
+                        if (i != h - 1 && j != 0 && map[i + 1][j - 1] == 0) {       // down-left
+                            map[i + 1][j - 1] = _step + 1;
+                        }
+                        if (i != 0 && j != w - 1 && map[i - 1][j + 1] == 0) {       // up-right
+                            map[i - 1][j + 1] = _step + 1;
+                        }
+                        if (i != 0 && j != 0 && map[i - 1][j - 1] == 0) {           // up-left
+                            map[i - 1][j - 1] = _step + 1;
+                        }
 
                         if (i != h - 1 && i + 1 == toI && j == toJ) {                 // ok down
                             _finishPointI = i + 1;
@@ -120,32 +119,31 @@ public class WavePropagation {
                             _finishPointJ = j - 1;
                             finished = true;
                         }
-                        // TODO:
+
                         // диагонали
-//                        // диагонали
-//                        if (i != h - 1 && j != w - 1 && i + 1 == toI && j + 1 == toJ) {   // ok down-right
-//                            _finishPointI = i + 1;
-//                            _finishPointJ = j + 1;
-//                            finished = true;
-//                        }
-//
-//                        if (i != h - 1 && j != 0 && i + 1 == toI && j - 1 == toJ) {       // ok down-left
-//                            _finishPointI = i + 1;
-//                            _finishPointJ = j - 1;
-//                            finished = true;
-//                        }
-//
-//                        if (i != 0 && j != w - 1 && i - 1 == toI && j + 1 == toJ) {       // ok up-right
-//                            _finishPointI = i - 1;
-//                            _finishPointJ = j + 1;
-//                            finished = true;
-//                        }
-//
-//                        if (i != 0 && j != 0 && i - 1 == toI && j - 1 == toJ) {           // ok up-left
-//                            _finishPointI = i - 1;
-//                            _finishPointJ = j - 1;
-//                            finished = true;
-//                        }
+                        if (i != h - 1 && j != w - 1 && i + 1 == toI && j + 1 == toJ) {   // ok down-right
+                            _finishPointI = i + 1;
+                            _finishPointJ = j + 1;
+                            finished = true;
+                        }
+
+                        if (i != h - 1 && j != 0 && i + 1 == toI && j - 1 == toJ) {       // ok down-left
+                            _finishPointI = i + 1;
+                            _finishPointJ = j - 1;
+                            finished = true;
+                        }
+
+                        if (i != 0 && j != w - 1 && i - 1 == toI && j + 1 == toJ) {       // ok up-right
+                            _finishPointI = i - 1;
+                            _finishPointJ = j + 1;
+                            finished = true;
+                        }
+
+                        if (i != 0 && j != 0 && i - 1 == toI && j - 1 == toJ) {           // ok up-left
+                            _finishPointI = i - 1;
+                            _finishPointJ = j - 1;
+                            finished = true;
+                        }
                     }
 
                 }
@@ -172,6 +170,9 @@ public class WavePropagation {
         if (!_finishingCellMarked)
             return false;
 
+        int h = height;
+        int w = width;
+
         int i = _finishPointI;
         int j = _finishPointJ;
         path = new ArrayList<>();
@@ -194,29 +195,28 @@ public class WavePropagation {
                 j -= 1;
                 addToPath(i, j);
             }
-            // TODO:
-            // диагонали
-//            // диагонали:
-//            if (i != h - 1 && j != w - 1 && map[i + 1][j + 1] == _step - 1) {   // down-right
-//                i += 1;
-//                j += 1;
-//                addToPath(i, j);
-//            }
-//            if (i != h - 1 && j != 0 && map[i + 1][j - 1] == _step - 1) {       // down-left
-//                i += 1;
-//                j -= 1;
-//                addToPath(i, j);
-//            }
-//            if (i != 0 && j != w - 1 && map[i - 1][j + 1] == _step - 1) {       // up-right
-//                i -= 1;
-//                j += 1;
-//                addToPath(i, j);
-//            }
-//            if (i != 0 && j != 0 && map[i - 1][j - 1] == _step - 1) {           // up-left
-//                i -= 1;
-//                j -= 1;
-//                addToPath(i, j);
-//            }
+
+            // диагонали:
+            if (i != h - 1 && j != w - 1 && map[i + 1][j + 1] == _step - 1) {   // down-right
+                i += 1;
+                j += 1;
+                addToPath(i, j);
+            }
+            if (i != h - 1 && j != 0 && map[i + 1][j - 1] == _step - 1) {       // down-left
+                i += 1;
+                j -= 1;
+                addToPath(i, j);
+            }
+            if (i != 0 && j != w - 1 && map[i - 1][j + 1] == _step - 1) {       // up-right
+                i -= 1;
+                j += 1;
+                addToPath(i, j);
+            }
+            if (i != 0 && j != 0 && map[i - 1][j - 1] == _step - 1) {           // up-left
+                i -= 1;
+                j -= 1;
+                addToPath(i, j);
+            }
 
             _step--;
         } while (_step != 1); // ???
@@ -256,45 +256,24 @@ public class WavePropagation {
 
         return new Offset(0, 0);
     }
-}
 
-//class Program {
-//    static void Main(string[] args) {
-//        const int heigth = 10;
-//        const int width = 18;
-//
-//        int[,]my = new int[heigth, width];
-//        for (int i = 0; i < heigth; i++) {
-//            for (int j = 0; j < width; j++) {
-//                var rand = new Random(unchecked((int) DateTime.Now.Millisecond));
-//                if (rand.Next(100) > 70)
-//                    my[i, j] =(int) Figures.Barrier;
-//                else
-//                my[i, j] =(int) Figures.EmptySpace;
-//            }
-//        }
-//        var random = new Random(unchecked((int) DateTime.Now.Millisecond));
-//        my[random.Next(heigth), random.Next(width)] =(int) Figures.StartPosition;
-//        my[random.Next(heigth), random.Next(width)] =(int) Figures.Destination;
-//        Print(my);
-//
-//        LeeAlgorithm li = new LeeAlgorithm(my);
-//        Console.WriteLine(li.PathFound);
-//        if (li.PathFound) {
-//            foreach(var item in li.Path)
-//            {
-//                if (item == li.Path.Last())
-//                    my[item.Item1, item.Item2] =(int) Figures.StartPosition;
-//                else if (item == li.Path.First())
-//                my[item.Item1, item.Item2] =(int) Figures.Destination;
-//                else
-//                my[item.Item1, item.Item2] =(int) Figures.Path;
-//            }
-//            Print(li.ArrayGraph);
-//            Console.WriteLine("Длина " + li.LengthPath);
-//        } else
-//            Console.WriteLine("Путь не найден");
-//        Console.ReadLine();
-//
-//    }
-//}
+    // должен вернуть стек со всеми шагами такой, что первый элемент стека - первый шаг
+    public Stack<Offset> getAllSteps() {
+        Stack<Offset> returnStack = new Stack<>();
+
+        var nextPosition = path.get(0);
+        for(int i = 1; i < path.size(); i++) {
+            var prevPosition = path.get(i);
+
+            // offset prevPosition -> nextPosition
+            int offsetY = prevPosition.getKey() - nextPosition.getKey();
+            int offsetX = nextPosition.getValue() - prevPosition.getValue();
+
+            returnStack.push(new Offset(offsetX, offsetY));
+
+            nextPosition = prevPosition;
+        }
+
+        return returnStack;
+    }
+}
