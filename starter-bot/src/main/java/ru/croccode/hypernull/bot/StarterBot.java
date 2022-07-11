@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javafx.util.Pair;
 import ru.croccode.hypernull.domain.MatchMode;
@@ -20,6 +21,77 @@ import ru.croccode.hypernull.reader.PropertiesReader;
 import ru.croccode.hypernull.wavePropagation.WavePropagation;
 
 import static ru.croccode.hypernull.map.MapGraph.*;
+import static ru.croccode.hypernull.wavePropagation.WavePropagation.findShortestPathLength;
+
+enum Direction {
+    UP(0),
+    RIGHT(1),
+    DOWN(2),
+    LEFT(3);
+
+    public final int value;
+
+    public static Direction getByNum(int num) {
+        switch (num) {
+            case 0:
+                return UP;
+            case 1:
+                return RIGHT;
+            case 2:
+                return DOWN;
+            case 3:
+                return LEFT;
+        }
+
+        return null;
+    }
+
+    Direction(int value) {
+        this.value = value;
+    }
+}
+
+class SmartDirection {
+    private final Direction direction;
+
+    public SmartDirection(Direction direction) {
+        this.direction = direction;
+    }
+
+    public Direction rotateRight() {
+        switch (direction) {
+            case UP:
+                return Direction.RIGHT;
+            case RIGHT:
+                return Direction.DOWN;
+            case DOWN:
+                return Direction.LEFT;
+            case LEFT:
+                return Direction.UP;
+        }
+
+        return null;
+    }
+
+    public Direction rotateLeft() {
+        switch (direction) {
+            case UP:
+                return Direction.LEFT;
+            case RIGHT:
+                return Direction.UP;
+            case DOWN:
+                return Direction.RIGHT;
+            case LEFT:
+                return Direction.DOWN;
+        }
+
+        return null;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+}
 
 public class StarterBot implements Bot {
 
@@ -147,8 +219,6 @@ public class StarterBot implements Bot {
         // возвращает true, если можем куда-то добраться
         // offset - первый шаг
 
-        int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
-
         boolean ansB = false;
         Stack<Offset> ansS = new Stack<>();
 
@@ -157,15 +227,22 @@ public class StarterBot implements Bot {
         if (absoluteCoins != null) {
             for (var coinAbsolutePoint :
                     absoluteCoins) {
+                int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
+
                 Point toRelatedPoint = getRelatedPoint(myAbsolutePoint, coinAbsolutePoint);
                 Point myRelatedPoint = getRelatedPoint(myAbsolutePoint, myAbsolutePoint);
 
-                WavePropagation wavePropagation = new WavePropagation(myRelatedPoint, toRelatedPoint, myMapCopy);
+                //WavePropagation wavePropagation = new WavePropagation(myRelatedPoint, toRelatedPoint, myMapCopy);
+                var ans = findShortestPathLength(myMapCopy, myRelatedPoint.y(), myRelatedPoint.x(), toRelatedPoint.y(), toRelatedPoint.x());
 
-                if (wavePropagation.pathFound && wavePropagation.lengthPath < minLength) {
+                if (ans.getKey() != Integer.MAX_VALUE && ans.getValue().size() < minLength) {
                     ansB = true;
-                    minLength = wavePropagation.lengthPath;
-                    ansS = wavePropagation.getAllSteps();
+                    minLength = ans.getValue().size();
+                    Stack<Offset> tmp = new Stack<>();
+                    for(int i = ans.getValue().size() - 1; i >= 0; i--){
+                        tmp.push(ans.getValue().get(i));
+                    }
+                    ansS = tmp;
                 }
             }
         }
@@ -173,7 +250,7 @@ public class StarterBot implements Bot {
         if (ansB) {
             return new Pair<>(true, ansS);
         } else {
-            return new Pair<>(false, ansS); // ans0 -> new Stack<>();
+            return new Pair<>(false, ansS); // ansS -> new Stack<>();
         }
 
     }
@@ -181,14 +258,6 @@ public class StarterBot implements Bot {
     private boolean ifNothing(Map<Integer, Point> bots, Set<Point> coins) {
         return bots.size() <= 1 && coins == null;
     }
-
-    private Point lastAbsolutePoint = new Point(0, 0);
-    private int amountOfSleepingSteps = 0;
-
-    private int amountOfStepsInTact = 0;
-
-    private Stack<Offset> stuckList = new Stack<>();
-    private Stack<Offset> sbrStack = new Stack<>();
 
     private int[][] createMyMapIntCopyWithoutCoins() {
         int[][] myMapCopy = new int[myMap.length][myMap[0].length];
@@ -205,7 +274,7 @@ public class StarterBot implements Bot {
         return myMapCopy;
     }
 
-    private Stack<Offset> createInsaneAntiDancingOffset(Point myAbsolutePoint) {
+/*    private Stack<Offset> createInsaneAntiDancingOffset(Point myAbsolutePoint) {
         int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
 
         List<Stack<Offset>> ways = new ArrayList<>();
@@ -213,6 +282,7 @@ public class StarterBot implements Bot {
         for(int i = 0; i < myMapCopy.length; i++) {
             for (int j = 0; j < myMapCopy[i].length; j++) {
                 if (myMapCopy[i][j] != 999) {
+
                     Point toRelatedPoint = new Point(j, i);
                     Point myRelatedPoint = getRelatedPoint(myAbsolutePoint, myAbsolutePoint);
 
@@ -221,14 +291,124 @@ public class StarterBot implements Bot {
                     if (wavePropagation.pathFound) {
                         ways.add(wavePropagation.getAllSteps());
                     }
+
                 }
             }
         }
 
         return (!ways.isEmpty()) ? ways.stream().findAny().get() : new Stack<>();
+    }*/
+
+    private Point lastAbsolutePoint = new Point(0, 0);
+    private int amountOfSleepingSteps = 0;
+
+    private int amountOfStepsInTact = 0;
+
+    private Stack<Offset> stuckList = new Stack<>();
+    private Stack<Offset> sbrStack = new Stack<>();
+
+    private SmartDirection smartDirection = new SmartDirection(Direction.UP);
+
+    private Offset getOffsetFromAbsDir(Direction absoluteDirection) {
+        switch (absoluteDirection)  {
+            case UP:
+                return new Offset(0, 1);
+            case RIGHT:
+                return new Offset(1, 0);
+            case DOWN:
+                return new Offset(0, -1);
+            case LEFT:
+                return new Offset(-1, 0);
+            default:
+                return null;
+        }
     }
 
-    @Override
+    private Direction getAbsDirFromRelDir(Direction relatedDirection)   {
+        SmartDirection smartDirectionCopy = new SmartDirection(smartDirection.getDirection()); // голова
+
+        Map<Direction, Direction> mapRelatedDirToAbsoluteDir = new HashMap<>();
+
+        for(int i = 1; i <= 4; i++) { // right: 1,
+            mapRelatedDirToAbsoluteDir.put(
+                    Direction.getByNum(i % 4),
+                    smartDirectionCopy.rotateRight()
+            );
+            smartDirectionCopy = new SmartDirection(smartDirectionCopy.rotateRight());
+        }
+
+        return mapRelatedDirToAbsoluteDir.get(relatedDirection);
+    }
+
+/*    public static void main(String[] args) {
+        StarterBot bot = new StarterBot(null);
+        bot.smartDirection = new SmartDirection(Direction.DOWN);
+        System.out.println(bot.getAbsDirFromRelDir(Direction.UP)); // LEFT
+        System.out.println(bot.getAbsDirFromRelDir(Direction.RIGHT)); // UP
+        System.out.println(bot.getAbsDirFromRelDir(Direction.DOWN)); // RIGHT
+        System.out.println(bot.getAbsDirFromRelDir(Direction.LEFT)); // DOWN
+    }*/
+
+    private boolean isBlockedByRelatedPointAndRelatedDirection(Point relatedPoint, Direction relatedDirection) { // чел; сторона относительно башки
+        // smartDirection = left
+        // relatedDirection = right
+        // return UP
+        Direction absoluteDirection = getAbsDirFromRelDir(relatedDirection);
+
+        Point relatedPointFromAbsoluteDirection;
+        switch (absoluteDirection)  {
+            case UP:
+                relatedPointFromAbsoluteDirection = new Point(relatedPoint.x(), relatedPoint.y() - 1);
+                return isBlocked(relatedPointFromAbsoluteDirection);
+            case RIGHT:
+                relatedPointFromAbsoluteDirection = new Point(relatedPoint.x() + 1, relatedPoint.y());
+                return isBlocked(relatedPointFromAbsoluteDirection);
+            case DOWN:
+                relatedPointFromAbsoluteDirection = new Point(relatedPoint.x(), relatedPoint.y() + 1);
+                return isBlocked(relatedPointFromAbsoluteDirection);
+            case LEFT:
+                relatedPointFromAbsoluteDirection = new Point(relatedPoint.x() - 1, relatedPoint.y());
+                return isBlocked(relatedPointFromAbsoluteDirection);
+        }
+        return false;
+    }
+
+    private Offset getOffsetFromRelDir(Direction relatedDirection)  {
+        Direction absoluteDirection = getAbsDirFromRelDir(relatedDirection);
+        return getOffsetFromAbsDir(absoluteDirection);
+    }
+
+    private Offset labyrinthOffset(Point myAbsolutePoint) {
+        Point myRelatedPoint = getRelatedPoint(myAbsolutePoint, myAbsolutePoint);
+
+        while (true) {
+            boolean isNeighbour = false;
+
+            for(int i = 0; i < 4; i++){
+                isNeighbour |= isBlockedByRelatedPointAndRelatedDirection(myRelatedPoint, Direction.getByNum(i));
+            }
+
+            if (isNeighbour) {
+                // полезное
+                if (isBlockedByRelatedPointAndRelatedDirection(myRelatedPoint, Direction.RIGHT)) {
+                    if (isBlockedByRelatedPointAndRelatedDirection(myRelatedPoint, Direction.UP)) {
+                        smartDirection = new SmartDirection(smartDirection.rotateLeft()); // ПОЧЕМУ НЕ РАБОТАЕТ???
+                    } else {
+                        //return getOffsetFromRelDir(Direction.UP);
+                        return getOffsetFromAbsDir(smartDirection.getDirection());
+                    }
+                } else {
+                    smartDirection = new SmartDirection(smartDirection.rotateRight());
+                    //return getOffsetFromRelDir(Direction.UP);
+                    return getOffsetFromAbsDir(smartDirection.getDirection());
+                }
+            } else {
+                Direction direction = smartDirection.getDirection();
+                return getOffsetFromAbsDir(direction);
+            }
+        }
+    }
+/*    @Override
     public Move onUpdate(Update update) {
         System.out.println("UPDATE");
         // умные вещи
@@ -323,6 +503,70 @@ public class StarterBot implements Bot {
         }
 
         amountOfStepsInTact += 1;
+
+        Move move = new Move();
+        move.setOffset(moveOffset);
+        return move;
+    }*/
+
+    // есть монетка -> найти полный путь и до конца идти
+    // если нет монеток или застряли -> "правая рука"
+    @Override
+    public Move onUpdate(Update update) {
+        System.out.println("UPDATE");
+
+        Offset moveOffset = new Offset(0, 0);
+
+        Set<Point> blocks = update.getBlocks();
+        Map<Integer, Point> bots = update.getBots();
+        Map<Integer, Integer> botCoins = update.getBotCoins();
+        Set<Point> coins = update.getCoins();
+
+        Point myAbsolutePoint = bots.get(id);
+
+        updateMap(blocks, coins, bots, myAbsolutePoint);
+
+        myMap = getMap();
+
+        boolean attackAndDefeat;
+        boolean attackAndWin;
+
+        var valueAttackAndDefeat = handleEnemy(bots, botCoins, myAbsolutePoint, false);
+        attackAndDefeat = valueAttackAndDefeat.getKey();
+
+        var valueAttackAndWin = handleEnemy(bots, botCoins, myAbsolutePoint, true);
+        attackAndWin = valueAttackAndWin.getKey();
+
+        boolean goGoZeppeli;
+
+        if (sbrStack.isEmpty()) {
+            var steelBallRun = ifMoney(coins, myAbsolutePoint);
+            goGoZeppeli = steelBallRun.getKey();
+            sbrStack = steelBallRun.getValue();
+        }
+        else {
+            goGoZeppeli = true;
+        }
+
+        // логика
+        if (getMode() == MatchMode.DEATHMATCH && attackAndDefeat && false) {  // SWITCH ME PLEASE
+            moveOffset = valueAttackAndDefeat.getValue();
+        } else if (getMode() == MatchMode.DEATHMATCH && attackAndWin && false) {  // SWITCH ME PLEASE
+            moveOffset = valueAttackAndWin.getValue(); // говно переделывай
+        } else if (goGoZeppeli) {
+            // монетка
+            moveOffset = sbrStack.pop();
+            moveOffset = new Offset(moveOffset.dx(), moveOffset.dy());
+            if (moveOffset.dx() == 0 && moveOffset.dy() == 0 && !sbrStack.isEmpty()) moveOffset = sbrStack.pop();
+
+            if (rnd.nextInt(1000) > 100 && false) {
+                sbrStack.clear();
+            }
+        }
+        else if (true){ // SWITCH ME PLEASE
+            // лабиринт
+            moveOffset = labyrinthOffset(myAbsolutePoint);
+        }
 
         Move move = new Move();
         move.setOffset(moveOffset);

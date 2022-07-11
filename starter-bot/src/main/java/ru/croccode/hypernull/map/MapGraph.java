@@ -141,7 +141,7 @@ public class MapGraph {
         if (absoluteBots != null) addSomething(new HashSet<>(absoluteBots.values()), myAbsolutePoint, '#');
         if (absoluteCoins != null) addSomething(absoluteCoins, myAbsolutePoint, '$');
 
-        printMap();
+        //printMap();
     }
 
     public static char[][] getMap() {
