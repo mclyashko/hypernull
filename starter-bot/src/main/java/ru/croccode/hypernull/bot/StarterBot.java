@@ -556,8 +556,8 @@ public class StarterBot implements Bot {
         } else if (goGoZeppeli) {
             // монетка
             moveOffset = sbrStack.pop();
-            moveOffset = new Offset(moveOffset.dx(), moveOffset.dy());
             if (moveOffset.dx() == 0 && moveOffset.dy() == 0 && !sbrStack.isEmpty()) moveOffset = sbrStack.pop();
+            moveOffset = new Offset(moveOffset.dx(), moveOffset.dy());
 
             if (rnd.nextInt(1000) > 100 && false) {
                 sbrStack.clear();
