@@ -46,12 +46,25 @@ public class MapGraph {
         // 0 # 0 0 0 # 0
         // 0 0 # 0 # 0 0
 
-        int offsetX = Math.min(
+        int xCoordinateTransition;
+        int yCoordinateTransition;
+
+        int straightOffsetX = Math.abs(targetAbsoluteX - myAbsoluteX);
+        int transitionOffsetX = MapGraph.width - Math.abs(targetAbsoluteX - myAbsoluteX);
+
+        xCoordinateTransition = straightOffsetX < transitionOffsetX ? 1 : -1;
+
+        int offsetX = xCoordinateTransition * Math.min(
                 Math.abs(targetAbsoluteX - myAbsoluteX),
                 MapGraph.width - Math.abs(targetAbsoluteX - myAbsoluteX)
         );
 
-        int offsetY = Math.min(
+        int straightOffsetY = Math.abs(targetAbsoluteY - myAbsoluteY);
+        int transitionOffsetY = MapGraph.height - Math.abs(targetAbsoluteY - myAbsoluteY);
+
+        yCoordinateTransition = straightOffsetY < transitionOffsetY ? 1 : -1;
+
+        int offsetY = yCoordinateTransition * Math.min(
                 Math.abs(targetAbsoluteY - myAbsoluteY),
                 MapGraph.height - Math.abs(targetAbsoluteY - myAbsoluteY)
         );
