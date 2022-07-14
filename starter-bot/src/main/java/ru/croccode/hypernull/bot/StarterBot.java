@@ -187,6 +187,26 @@ public class StarterBot implements Bot {
         initMap(viewRadius, mapWidth, mapHeight);
     }
 
+    private Pair<Boolean, Offset> getOptimalGoToTargetOffsetByWavePropagation(Point myAbsolutePoint,
+                                                                              Point targetAbsolutePoint) {
+        int[][] myMapCopy = createMyMapIntCopyWithoutCoins();
+
+        Point toRelatedPoint = getRelatedPoint(myAbsolutePoint, targetAbsolutePoint);
+        Point myRelatedPoint = getRelatedPoint(myAbsolutePoint, myAbsolutePoint);
+
+        myMapCopy[toRelatedPoint.y()][toRelatedPoint.x()] = 0; // delete war bot from map
+
+        var ans = findShortestPathLength(myMapCopy, myRelatedPoint.y(), myRelatedPoint.x(), toRelatedPoint.y(), toRelatedPoint.x());
+
+        if (ans.getKey() != Integer.MAX_VALUE && ans.getValue().size() > 1) {
+            Offset moveOffset = ans.getValue().get(1);
+            return new Pair<>(true, moveOffset);
+        }
+        else {
+            return new Pair<>(false, new Offset(0, 0));
+        }
+    }
+
     private Pair<Boolean, Offset> handleEnemy(Map<Integer, Point> absoluteBots, Map<Integer, Integer> botCoins,
                                               Point myAbsolutePoint, boolean goWar) { // goWar true -> fight; false -> goAway
         int myCoins = botCoins.get(id);
@@ -205,7 +225,7 @@ public class StarterBot implements Bot {
         }
 
         if (enemyP != null) {
-            return (goWar) ? new Pair<>(true, goToTargetStupidOffset(myAbsolutePoint, enemyP)) :
+            return (goWar) ? getOptimalGoToTargetOffsetByWavePropagation(myAbsolutePoint, enemyP) : // new Pair<>(true, goToTargetStupidOffset(myAbsolutePoint, enemyP)) :
                     new Pair<>(true, getOptimalGoAwayOffset(myAbsolutePoint, enemyP));
         }
         else {
@@ -549,17 +569,17 @@ public class StarterBot implements Bot {
         }
 
         // логика
-        if (getMode() == MatchMode.DEATHMATCH && attackAndDefeat && false) {  // SWITCH ME PLEASE
+        if (getMode() == MatchMode.DEATHMATCH && attackAndDefeat && true) {  // SWITCH ME PLEASE
             moveOffset = valueAttackAndDefeat.getValue();
-        } else if (getMode() == MatchMode.DEATHMATCH && attackAndWin && false) {  // SWITCH ME PLEASE
+        } else if (getMode() == MatchMode.DEATHMATCH && attackAndWin && true) {  // SWITCH ME PLEASE
             moveOffset = valueAttackAndWin.getValue(); // говно переделывай
-        } else if (goGoZeppeli) {
+        } else if (goGoZeppeli && true) {  // SWITCH ME PLEASE
             // монетка
             moveOffset = sbrStack.pop();
             if (moveOffset.dx() == 0 && moveOffset.dy() == 0 && !sbrStack.isEmpty()) moveOffset = sbrStack.pop();
             moveOffset = new Offset(moveOffset.dx(), moveOffset.dy()); // вроде необязательно
 
-            if (rnd.nextInt(1000) > 888 && true) {
+            if (rnd.nextInt(1000) > 888) {  // SWITCH ME PLEASE
                 sbrStack.clear();
             }
         }
