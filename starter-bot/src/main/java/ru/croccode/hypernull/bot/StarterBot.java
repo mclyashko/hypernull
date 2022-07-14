@@ -559,7 +559,7 @@ public class StarterBot implements Bot {
             if (moveOffset.dx() == 0 && moveOffset.dy() == 0 && !sbrStack.isEmpty()) moveOffset = sbrStack.pop();
             moveOffset = new Offset(moveOffset.dx(), moveOffset.dy()); // вроде необязательно
 
-            if (rnd.nextInt(1000) > 100 && false) {
+            if (rnd.nextInt(1000) > 888 && true) {
                 sbrStack.clear();
             }
         }
